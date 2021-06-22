@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let font =
         FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
 
-    let mut renderer = TextRenderer::new(&gl, font);
+    let mut renderer = TextRenderer::try_new(&gl, font).unwrap();
 
     renderer.glyph_brush().queue(
         Section::default()

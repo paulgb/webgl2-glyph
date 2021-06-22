@@ -6,6 +6,8 @@ use crate::projection::ortho;
 use crate::shader::{compile_shader, link_program};
 use crate::vertex::{QuadData, VertexData};
 use wasm_bindgen::JsCast;
+pub use crate::fps::FpsCounter;
+use crate::error::GlyphAtlasError;
 
 #[allow(unused)]
 macro_rules! console_log {
@@ -19,6 +21,7 @@ mod error;
 mod projection;
 mod shader;
 mod vertex;
+mod fps;
 
 pub struct TextRenderer<'a> {
     gl: &'a WebGl2RenderingContext,
@@ -73,12 +76,12 @@ impl<'a> TextRenderer<'a> {
         texture
     }
 
-    pub fn new(gl: &'a WebGl2RenderingContext, font: FontArc) -> Self {
+    pub fn try_new(gl: &'a WebGl2RenderingContext, font: FontArc) -> Result<Self, Box<dyn std::error::Error>> {
         let glyph_brush: GlyphBrush<QuadData> = {
             GlyphBrushBuilder::using_font(font).build()
         };
 
-        let vertex_buffer = gl.create_buffer().unwrap();
+        let vertex_buffer = gl.create_buffer().ok_or_else(|| GlyphAtlasError::WebGlError("Couldn't allocate buffer.".to_string()))?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
         gl.buffer_data_with_i32(WebGl2RenderingContext::ARRAY_BUFFER, 4096, WebGl2RenderingContext::DYNAMIC_DRAW);
 
@@ -89,24 +92,22 @@ impl<'a> TextRenderer<'a> {
                 &gl,
                 WebGl2RenderingContext::VERTEX_SHADER,
                 include_str!("shader.vert"),
-            )
-            .unwrap();
+            )?;
             let frag_shader = compile_shader(
                 &gl,
                 WebGl2RenderingContext::FRAGMENT_SHADER,
                 include_str!("shader.frag"),
-            )
-            .unwrap();
+            )?;
             link_program(&gl, &vert_shader, &frag_shader).unwrap()
         };
 
-        TextRenderer {
+        Ok(TextRenderer {
             gl,
             glyph_brush,
             program,
             vertex_buffer,
             texture,
-        }
+        })
     }
 
     pub fn render(&mut self) {
@@ -139,7 +140,6 @@ impl<'a> TextRenderer<'a> {
                     self.gl
                         .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.vertex_buffer));
 
-                    console_log!("size: {}", (&bytemuck::cast_slice(&vertices) as &[u8]).len());
                     self.gl.buffer_sub_data_with_i32_and_u8_array(
                         WebGl2RenderingContext::ARRAY_BUFFER,
                         0,
@@ -203,7 +203,6 @@ impl<'a> TextRenderer<'a> {
                     break;
                 }
                 Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
-                    console_log!("here");
                     self.texture = Self::create_texture(gl, suggested);
                     self.glyph_brush.resize_texture(suggested.0, suggested.1);
                 }

@@ -25,7 +25,7 @@ impl Animation {
         let font =
             FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
 
-        let renderer = TextRenderer::new(gl, font);
+        let renderer = TextRenderer::try_new(gl, font).unwrap();
 
         Animation {
             _gl: gl,

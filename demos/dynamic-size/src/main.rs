@@ -3,7 +3,7 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::WebGl2RenderingContext;
-use webgl2_glyph::{FontArc, Section, Text, TextRenderer};
+use webgl2_glyph::{FontArc, Section, Text, TextRenderer, FpsCounter};
 
 #[allow(unused)]
 macro_rules! console_log {
@@ -17,6 +17,7 @@ struct Animation {
     _gl: &'static WebGl2RenderingContext,
     renderer: TextRenderer<'static>,
     frame: u32,
+    fps: FpsCounter,
 }
 
 impl Animation {
@@ -25,12 +26,13 @@ impl Animation {
         let font =
             FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
 
-        let renderer = TextRenderer::new(gl, font);
+        let renderer = TextRenderer::try_new(gl, font).unwrap();
 
         Animation {
             _gl: gl,
             renderer,
             frame: 0,
+            fps: FpsCounter::new(10),
         }
     }
 
@@ -43,6 +45,10 @@ impl Animation {
         );
 
         self.renderer.render();
+
+        if let Some(t) = self.fps.tick() {
+            console_log!("FPS: {:.2}", t);
+        }
 
         self.frame += 1;
     }

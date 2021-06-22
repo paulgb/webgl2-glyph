@@ -16,6 +16,7 @@ web-sys = { version="0.3.51", features = [
   'Document',
   'Element',
   'HtmlCanvasElement',
+  'Performance',
   'WebGlBuffer',
   'WebGl2RenderingContext',
   'WebGlVertexArrayObject',
