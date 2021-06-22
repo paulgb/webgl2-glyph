@@ -27,7 +27,7 @@ jobs:
       run: |
         mkdir dist
         cd demos
-        for DEMO_DIR in $(ls)
+        for DEMO_DIR in $(ls -d *)
         do
           cd "${DEMO_DIR}"
           trunk build --public-url="/webgl2-glyph-atlas/${DEMO_DIR}/"
