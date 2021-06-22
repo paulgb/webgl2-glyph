@@ -1,4 +1,4 @@
-use glyph_brush::{BrushAction, GlyphBrush, GlyphBrushBuilder, Rectangle, Section, Text};
+pub use glyph_brush::{BrushAction, GlyphBrush, GlyphBrushBuilder, Rectangle, Section, Text};
 pub use glyph_brush::ab_glyph::FontArc;
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlTexture};
 
@@ -28,8 +28,12 @@ pub struct TextRenderer<'a> {
 }
 
 impl<'a> TextRenderer<'a> {
+    pub fn glyph_brush(&mut self) -> &mut GlyphBrush<QuadData> {
+        &mut self.glyph_brush
+    }
+
     pub fn new(gl: &'a WebGl2RenderingContext, font: FontArc) -> Self {
-        let mut glyph_brush: GlyphBrush<QuadData> = {
+        let glyph_brush: GlyphBrush<QuadData> = {
             GlyphBrushBuilder::using_font(font).build()
         };
 
@@ -74,12 +78,6 @@ impl<'a> TextRenderer<'a> {
                 WebGl2RenderingContext::NEAREST as i32,
             );
         }
-
-        glyph_brush.queue(
-            Section::default()
-                .add_text(Text::new("Hello world").with_scale(50.))
-                .with_screen_position((30., 30.)),
-        );
 
         let program = {
             let vert_shader = compile_shader(
