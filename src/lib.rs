@@ -25,7 +25,7 @@ pub struct TextRenderer<'a> {
     glyph_brush: GlyphBrush<QuadData>,
     program: WebGlProgram,
     vertex_buffer: WebGlBuffer,
-    _texture: WebGlTexture,
+    texture: WebGlTexture,
 }
 
 impl<'a> TextRenderer<'a> {
@@ -61,6 +61,7 @@ impl<'a> TextRenderer<'a> {
             )
             .unwrap();
 
+            gl.pixel_storei(WebGl2RenderingContext::UNPACK_ALIGNMENT, 1);
             gl.tex_parameteri(
                 WebGl2RenderingContext::TEXTURE_2D,
                 WebGl2RenderingContext::TEXTURE_WRAP_S,
@@ -104,19 +105,22 @@ impl<'a> TextRenderer<'a> {
             glyph_brush,
             program,
             vertex_buffer,
-            _texture: texture,
+            texture,
         }
     }
 
     pub fn render(&mut self) {
         let gl = &self.gl;
+        let texture = &self.texture;
 
         let update_texture = move |rect: Rectangle<u32>, tex_data: &[u8]| {
+            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
+
             gl.tex_sub_image_2d_with_i32_and_i32_and_u32_and_type_and_opt_u8_array(
                 WebGl2RenderingContext::TEXTURE_2D, // target
                 0,                                  // level
-                0,                                  // xoffset
-                0,                                  // yoffset
+                rect.min[0] as _,                   // xoffset
+                rect.min[1] as _,                   // yoffset
                 rect.width() as _,
                 rect.height() as _,
                 WebGl2RenderingContext::RED,           // format
@@ -193,9 +197,11 @@ impl<'a> TextRenderer<'a> {
                 );
             }
             Ok(BrushAction::ReDraw) => {
-                console_log!("redraw");
+
             }
-            Err(glyph_brush::BrushError::TextureTooSmall { suggested: _ }) => {}
+            Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
+                console_log!("Resize suggested {:?}", &suggested);
+            }
         }
     }
 }
