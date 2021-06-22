@@ -22,7 +22,7 @@ pub fn compile_shader(
     } else {
         Err(context
             .get_shader_info_log(&shader)
-            .map(|d| GlyphAtlasError::WebGlShaderInfoLog(d))
+            .map(GlyphAtlasError::WebGlShaderInfoLog)
             .unwrap_or_else(|| GlyphAtlasError::WebGlError("Error compiling shader.".to_string())))
     }
 }
@@ -49,7 +49,7 @@ pub fn link_program(
     } else {
         Err(context
             .get_program_info_log(&program)
-            .map(|d| GlyphAtlasError::WebGlProgramInfoLog(d))
+            .map(GlyphAtlasError::WebGlProgramInfoLog)
             .unwrap_or_else(|| GlyphAtlasError::WebGlError("Error linking program.".to_string())))
     }
 }
