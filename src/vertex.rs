@@ -20,8 +20,6 @@ pub struct QuadData([TriangleData; 2]);
 
 #[inline]
 pub fn to_quad_data(vertex: GlyphVertex) -> QuadData {
-    console_log!("vtx: {:?}", &vertex);
-
     let GlyphVertex {
         mut tex_coords,
         pixel_coords,

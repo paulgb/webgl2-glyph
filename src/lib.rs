@@ -1,6 +1,6 @@
 pub use glyph_brush::{BrushAction, GlyphBrush, GlyphBrushBuilder, Rectangle, Section, Text};
 pub use glyph_brush::ab_glyph::FontArc;
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlTexture};
+use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlTexture, WebGlBuffer};
 
 use crate::projection::ortho;
 use crate::shader::{compile_shader, link_program};
@@ -24,6 +24,7 @@ pub struct TextRenderer<'a> {
     gl: &'a WebGl2RenderingContext,
     glyph_brush: GlyphBrush<QuadData>,
     program: WebGlProgram,
+    vertex_buffer: WebGlBuffer,
     _texture: WebGlTexture,
 }
 
@@ -38,6 +39,9 @@ impl<'a> TextRenderer<'a> {
         };
 
         let texture = gl.create_texture().unwrap();
+        let vertex_buffer = gl.create_buffer().unwrap();
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
+        gl.buffer_data_with_i32(WebGl2RenderingContext::ARRAY_BUFFER, 4096, WebGl2RenderingContext::DYNAMIC_DRAW);
 
         {
             gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&texture));
@@ -99,6 +103,7 @@ impl<'a> TextRenderer<'a> {
             gl,
             glyph_brush,
             program,
+            vertex_buffer,
             _texture: texture,
         }
     }
@@ -126,18 +131,14 @@ impl<'a> TextRenderer<'a> {
             .process_queued(update_texture, vertex::to_quad_data)
         {
             Ok(BrushAction::Draw(vertices)) => {
-                let vertex_buffer = self.gl.create_buffer().unwrap();
                 self.gl
-                    .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
-                unsafe {
-                    let quad_array = js_sys::Float32Array::view(&bytemuck::cast_slice(&vertices));
+                    .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.vertex_buffer));
 
-                    self.gl.buffer_data_with_array_buffer_view(
-                        WebGl2RenderingContext::ARRAY_BUFFER,
-                        &quad_array,
-                        WebGl2RenderingContext::STATIC_DRAW,
-                    );
-                }
+                self.gl.buffer_sub_data_with_i32_and_u8_array(
+                    WebGl2RenderingContext::ARRAY_BUFFER,
+                    0,
+                    &bytemuck::cast_slice(&vertices),
+                );
 
                 let mut offset = 0;
                 offset = vertex::describe_attribute(
@@ -191,7 +192,9 @@ impl<'a> TextRenderer<'a> {
                     (vertices.len() * 6) as _,
                 );
             }
-            Ok(BrushAction::ReDraw) => {}
+            Ok(BrushAction::ReDraw) => {
+                console_log!("redraw");
+            }
             Err(glyph_brush::BrushError::TextureTooSmall { suggested: _ }) => {}
         }
     }
