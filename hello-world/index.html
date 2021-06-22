@@ -1,0 +1,24 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="utf-8">
+    <title>webgl2-glyph-atlas</title>
+
+    <base href="/webgl2-glyph-atlas/hello-world//">
+    <style>
+      body { background: #fff }
+    </style>
+  
+<link rel="preload" href="/webgl2-glyph-atlas/hello-world//index-f06872fc32bc8585_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="/webgl2-glyph-atlas/hello-world//index-f06872fc32bc8585.js"></head>
+  <body>
+    <div>
+      <canvas id="canvas" height="600" width="600">
+
+      <!-- add
+
+      style="image-rendering: pixelated; width: 500px; height: 500px;"
+
+      to get a 2x magnified view of the canvas. -->
+    </canvas></div>
+  
+
+<script type="module">import init from '/webgl2-glyph-atlas/hello-world//index-f06872fc32bc8585.js';init('/webgl2-glyph-atlas/hello-world//index-f06872fc32bc8585_bg.wasm');</script></body></html>
