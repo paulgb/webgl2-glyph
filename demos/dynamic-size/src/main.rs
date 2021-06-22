@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use webgl2_glyph::{FontArc, TextRenderer, Section, Text};
 use web_sys::WebGl2RenderingContext;
+use webgl2_glyph::{FontArc, Section, Text, TextRenderer};
 
 #[allow(unused)]
 macro_rules! console_log {
@@ -56,13 +56,15 @@ pub fn main() {
 
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.get_element_by_id("canvas").unwrap();
-    let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
+    let canvas: web_sys::HtmlCanvasElement =
+        canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
 
     let gl = canvas
         .get_context("webgl2")
         .unwrap()
         .unwrap()
-        .dyn_into::<WebGl2RenderingContext>().unwrap();
+        .dyn_into::<WebGl2RenderingContext>()
+        .unwrap();
 
     let mut animation = Animation::new(gl);
 
@@ -70,8 +72,12 @@ pub fn main() {
         animation.render();
 
         let window = web_sys::window().unwrap();
-        window.request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref()).unwrap();
+        window
+            .request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+            .unwrap();
     }) as Box<dyn FnMut()>));
 
-    window.request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref()).unwrap();
+    window
+        .request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+        .unwrap();
 }
