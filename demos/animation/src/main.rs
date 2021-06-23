@@ -42,7 +42,7 @@ impl Animation {
                 .with_screen_position((30., y)),
         );
 
-        self.renderer.render();
+        self.renderer.render().unwrap();
 
         self.frame += 1;
     }

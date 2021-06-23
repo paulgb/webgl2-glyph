@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_screen_position((30., 30.)),
     );
 
-    renderer.render();
+    renderer.render().unwrap();
 
     Ok(())
 }

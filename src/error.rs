@@ -1,4 +1,4 @@
-pub enum GlyphAtlasError {
+pub enum WebGL2GlyphError {
     WebGlError(String),
     WebGlShaderInfoLog(String),
     WebGlProgramInfoLog(String),
@@ -6,7 +6,7 @@ pub enum GlyphAtlasError {
     // InternalError(String),
 }
 
-impl std::fmt::Display for GlyphAtlasError {
+impl std::fmt::Display for WebGL2GlyphError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self {
             Self::WebGlError(st) => write!(f, "WebGL Error: {}", &st),
@@ -18,7 +18,7 @@ impl std::fmt::Display for GlyphAtlasError {
     }
 }
 
-impl std::fmt::Debug for GlyphAtlasError {
+impl std::fmt::Debug for WebGL2GlyphError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         std::fmt::Display::fmt(&self, f)
     }
@@ -26,4 +26,4 @@ impl std::fmt::Debug for GlyphAtlasError {
 
 // pub type Result<T> = std::result::Result<T, GlyphAtlasError>;
 
-impl std::error::Error for GlyphAtlasError {}
+impl std::error::Error for WebGL2GlyphError {}

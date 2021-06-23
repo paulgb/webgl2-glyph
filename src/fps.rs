@@ -9,7 +9,7 @@ impl FpsCounter {
         FpsCounter {
             last_time: None,
             ticks_since_last: 0,
-            ticks_per
+            ticks_per,
         }
     }
 

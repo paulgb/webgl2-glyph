@@ -1,15 +1,15 @@
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
-use crate::error::GlyphAtlasError;
+use crate::error::WebGL2GlyphError;
 
 pub fn compile_shader(
     context: &WebGl2RenderingContext,
     shader_type: u32,
     source: &str,
-) -> Result<WebGlShader, GlyphAtlasError> {
+) -> Result<WebGlShader, WebGL2GlyphError> {
     let shader = context
         .create_shader(shader_type)
-        .ok_or_else(|| GlyphAtlasError::WebGlError("Error creating shader.".to_string()))?;
+        .ok_or_else(|| WebGL2GlyphError::WebGlError("Error creating shader.".to_string()))?;
     context.shader_source(&shader, source);
     context.compile_shader(&shader);
 
@@ -22,8 +22,8 @@ pub fn compile_shader(
     } else {
         Err(context
             .get_shader_info_log(&shader)
-            .map(GlyphAtlasError::WebGlShaderInfoLog)
-            .unwrap_or_else(|| GlyphAtlasError::WebGlError("Error compiling shader.".to_string())))
+            .map(WebGL2GlyphError::WebGlShaderInfoLog)
+            .unwrap_or_else(|| WebGL2GlyphError::WebGlError("Error compiling shader.".to_string())))
     }
 }
 
@@ -31,10 +31,10 @@ pub fn link_program(
     context: &WebGl2RenderingContext,
     vert_shader: &WebGlShader,
     frag_shader: &WebGlShader,
-) -> Result<WebGlProgram, GlyphAtlasError> {
+) -> Result<WebGlProgram, WebGL2GlyphError> {
     let program = context
         .create_program()
-        .ok_or_else(|| GlyphAtlasError::WebGlError("Error creating program.".to_string()))?;
+        .ok_or_else(|| WebGL2GlyphError::WebGlError("Error creating program.".to_string()))?;
 
     context.attach_shader(&program, vert_shader);
     context.attach_shader(&program, frag_shader);
@@ -49,7 +49,7 @@ pub fn link_program(
     } else {
         Err(context
             .get_program_info_log(&program)
-            .map(GlyphAtlasError::WebGlProgramInfoLog)
-            .unwrap_or_else(|| GlyphAtlasError::WebGlError("Error linking program.".to_string())))
+            .map(WebGL2GlyphError::WebGlProgramInfoLog)
+            .unwrap_or_else(|| WebGL2GlyphError::WebGlError("Error linking program.".to_string())))
     }
 }

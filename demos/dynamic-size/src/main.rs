@@ -75,7 +75,7 @@ pub fn main() {
     let mut animation = Animation::new(gl);
 
     *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-        animation.render();
+        animation.render().unwrap();
 
         let window = web_sys::window().unwrap();
         window
