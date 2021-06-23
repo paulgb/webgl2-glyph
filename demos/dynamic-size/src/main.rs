@@ -44,7 +44,7 @@ impl Animation {
                 .with_screen_position((30., 30.)),
         );
 
-        self.renderer.render();
+        self.renderer.render().unwrap();
 
         if let Some(t) = self.fps.tick() {
             console_log!("FPS: {:.2}", t);
@@ -75,7 +75,7 @@ pub fn main() {
     let mut animation = Animation::new(gl);
 
     *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-        animation.render().unwrap();
+        animation.render();
 
         let window = web_sys::window().unwrap();
         window

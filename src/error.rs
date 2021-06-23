@@ -1,29 +1,23 @@
-pub enum WebGL2GlyphError {
+pub enum WebGl2GlyphError {
     WebGlError(String),
     WebGlShaderInfoLog(String),
     WebGlProgramInfoLog(String),
-    // DomError(String),
-    // InternalError(String),
 }
 
-impl std::fmt::Display for WebGL2GlyphError {
+impl std::fmt::Display for WebGl2GlyphError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self {
             Self::WebGlError(st) => write!(f, "WebGL Error: {}", &st),
             Self::WebGlProgramInfoLog(st) => write!(f, "WebGL Error linking program: {}", &st),
             Self::WebGlShaderInfoLog(st) => write!(f, "WebGL Error compiling shader: {}", &st),
-            // Self::DomError(st) => write!(f, "Error interacting with document: {}", &st),
-            // Self::InternalError(st) => write!(f, "Internal webgl2-glyph-atlas error: {}", &st),
         }
     }
 }
 
-impl std::fmt::Debug for WebGL2GlyphError {
+impl std::fmt::Debug for WebGl2GlyphError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         std::fmt::Display::fmt(&self, f)
     }
 }
 
-// pub type Result<T> = std::result::Result<T, GlyphAtlasError>;
-
-impl std::error::Error for WebGL2GlyphError {}
+impl std::error::Error for WebGl2GlyphError {}

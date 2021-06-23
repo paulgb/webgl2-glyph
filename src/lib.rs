@@ -2,13 +2,13 @@ pub use glyph_brush::ab_glyph::FontArc;
 pub use glyph_brush::{BrushAction, GlyphBrush, GlyphBrushBuilder, Rectangle, Section, Text};
 use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture};
 
-use crate::error::WebGL2GlyphError;
+use crate::error::WebGl2GlyphError;
 pub use crate::fps::FpsCounter;
 use crate::projection::ortho;
 use crate::shader::{compile_shader, link_program};
 use crate::vertex::{QuadData, VertexData};
-use wasm_bindgen::JsCast;
 use std::error::Error;
+use wasm_bindgen::JsCast;
 
 #[allow(unused)]
 macro_rules! console_log {
@@ -39,8 +39,13 @@ impl<'a> TextRenderer<'a> {
         &mut self.glyph_brush
     }
 
-    fn create_texture(gl: &WebGl2RenderingContext, dimensions: (u32, u32)) -> Result<WebGlTexture, Box<dyn Error>> {
-        let texture = gl.create_texture().ok_or_else(|| WebGL2GlyphError::WebGlError("Could not create texture".to_string()))?;
+    fn create_texture(
+        gl: &WebGl2RenderingContext,
+        dimensions: (u32, u32),
+    ) -> Result<WebGlTexture, Box<dyn Error>> {
+        let texture = gl
+            .create_texture()
+            .ok_or_else(|| WebGl2GlyphError::WebGlError("Could not create texture".to_string()))?;
         gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&texture));
         gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
             WebGl2RenderingContext::TEXTURE_2D, // target
@@ -52,7 +57,8 @@ impl<'a> TextRenderer<'a> {
             WebGl2RenderingContext::RED,           // format
             WebGl2RenderingContext::UNSIGNED_BYTE, // type
             None,
-        ).map_err(|_| WebGL2GlyphError::WebGlError("Could not load into texture.".to_string()))?;
+        )
+        .map_err(|_| WebGl2GlyphError::WebGlError("Could not load into texture.".to_string()))?;
 
         gl.pixel_storei(WebGl2RenderingContext::UNPACK_ALIGNMENT, 1);
         gl.tex_parameteri(
@@ -81,15 +87,12 @@ impl<'a> TextRenderer<'a> {
 
     /// Construct a new instance for rendering text in the given font to the given WebGL2 rendering
     /// context.
-    pub fn try_new(
-        gl: &'a WebGl2RenderingContext,
-        font: FontArc,
-    ) -> Result<Self, Box<dyn Error>> {
+    pub fn try_new(gl: &'a WebGl2RenderingContext, font: FontArc) -> Result<Self, Box<dyn Error>> {
         let glyph_brush: GlyphBrush<QuadData> = { GlyphBrushBuilder::using_font(font).build() };
 
         let vertex_buffer = gl
             .create_buffer()
-            .ok_or_else(|| WebGL2GlyphError::WebGlError("Couldn't allocate buffer.".to_string()))?;
+            .ok_or_else(|| WebGl2GlyphError::WebGlError("Couldn't allocate buffer.".to_string()))?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
         gl.buffer_data_with_i32(
             WebGl2RenderingContext::ARRAY_BUFFER,
@@ -141,7 +144,8 @@ impl<'a> TextRenderer<'a> {
                     WebGl2RenderingContext::RED,           // format
                     WebGl2RenderingContext::UNSIGNED_BYTE, // type
                     Some(&tex_data),
-                ).unwrap();
+                )
+                .unwrap();
             };
 
             match self
