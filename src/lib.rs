@@ -1,5 +1,5 @@
-pub use glyph_brush::ab_glyph::FontArc;
-pub use glyph_brush::{BrushAction, GlyphBrush, GlyphBrushBuilder, Rectangle, Section, Text};
+use ::glyph_brush::ab_glyph::FontArc;
+use ::glyph_brush::{BrushAction, GlyphBrush, GlyphBrushBuilder, Rectangle};
 use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture};
 
 use crate::error::WebGl2GlyphError;
@@ -24,6 +24,45 @@ mod projection;
 mod shader;
 mod vertex;
 
+/// Re-exported glyph_brush.
+pub mod glyph_brush {
+    pub use ::glyph_brush::*;
+    pub use ::glyph_brush::ab_glyph::FontArc;
+}
+
+/// Glyph renderer for WebGL2.
+///
+/// Example usage:
+///
+/// ```
+/// use wasm_bindgen::JsCast;
+/// use web_sys::WebGl2RenderingContext;
+/// use webgl2_glyph::{TextRenderer, glyph_brush::{FontArc, Section, Text}};
+///
+/// let document = web_sys::window().unwrap().document().unwrap();
+/// let canvas = document.get_element_by_id("canvas").unwrap();
+/// let canvas: web_sys::HtmlCanvasElement =
+/// canvas.dyn_into::<web_sys::HtmlCanvasElement>().unwrap();
+///
+/// let gl = canvas
+///     .get_context("webgl2")
+///     .unwrap()
+///     .unwrap()
+///     .dyn_into::<WebGl2RenderingContext>()
+///     .unwrap();
+///
+/// let font =
+///     FontArc::try_from_slice(include_bytes!("../demos/SourceSansPro-Regular.ttf")).unwrap();
+/// let mut renderer = TextRenderer::try_new(&gl, font).unwrap();
+///
+/// renderer.glyph_brush().queue(
+///     Section::default()
+///         .add_text(Text::new("Hello world").with_scale(50.))
+///         .with_screen_position((30., 30.)),
+/// );
+///
+/// renderer.render().unwrap();
+/// ```
 pub struct TextRenderer<'a> {
     gl: &'a WebGl2RenderingContext,
     glyph_brush: GlyphBrush<QuadData>,
@@ -92,7 +131,7 @@ impl<'a> TextRenderer<'a> {
 
         let vertex_buffer = gl
             .create_buffer()
-            .ok_or_else(|| WebGl2GlyphError::WebGlError("Couldn't allocate buffer.".to_string()))?;
+            .ok_or_else(|| WebGl2GlyphError::WebGlError("Couldn't create buffer.".to_string()))?;
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
         gl.buffer_data_with_i32(
             WebGl2RenderingContext::ARRAY_BUFFER,
@@ -126,6 +165,7 @@ impl<'a> TextRenderer<'a> {
     }
 
     /// Render the queued text. Should be called from a `request_animation_frame` callback.
+    /// Rendering clears the draw queue.
     pub fn render(&mut self) -> Result<(), Box<dyn Error>> {
         loop {
             let gl = &self.gl;
@@ -170,7 +210,7 @@ impl<'a> TextRenderer<'a> {
                         &self.program,
                         "a_position",
                         offset,
-                        3,
+                        3, // vec3(x, y, z)
                         std::mem::size_of::<VertexData>(),
                     );
                     offset = vertex::describe_attribute(
@@ -178,7 +218,7 @@ impl<'a> TextRenderer<'a> {
                         &self.program,
                         "a_tex_coord",
                         offset,
-                        2,
+                        2, // vec2(u, v)
                         std::mem::size_of::<VertexData>(),
                     );
                     vertex::describe_attribute(
@@ -186,7 +226,7 @@ impl<'a> TextRenderer<'a> {
                         &self.program,
                         "a_color",
                         offset,
-                        4,
+                        4, // vec2(r, g, b, a)
                         std::mem::size_of::<VertexData>(),
                     );
 

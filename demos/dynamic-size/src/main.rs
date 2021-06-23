@@ -3,7 +3,10 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::WebGl2RenderingContext;
-use webgl2_glyph::{FontArc, Section, Text, TextRenderer, FpsCounter};
+use webgl2_glyph::{
+    glyph_brush::{FontArc, Section, Text},
+    FpsCounter, TextRenderer,
+};
 
 #[allow(unused)]
 macro_rules! console_log {

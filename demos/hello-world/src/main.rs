@@ -1,7 +1,9 @@
-use webgl2_glyph::{FontArc, TextRenderer, Section, Text};
 use wasm_bindgen::JsCast;
 use web_sys::WebGl2RenderingContext;
-
+use webgl2_glyph::{
+    glyph_brush::{FontArc, Section, Text},
+    TextRenderer,
+};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     console_error_panic_hook::set_once();
@@ -18,8 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .dyn_into::<WebGl2RenderingContext>()
         .unwrap();
 
-    let font =
-        FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
+    let font = FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
 
     let mut renderer = TextRenderer::try_new(&gl, font).unwrap();
 
