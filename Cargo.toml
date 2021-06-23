@@ -7,6 +7,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["webgl"]
 readme = "README.md"
 repository = "https://github.com/paulgb/webgl2-glyph/"
+description = "WebGL2 text renderer, based on glyph_brush and ab_glyph (CPU rasterized glyph atlas)."
 
 exclude = ["demos/*"]
 
