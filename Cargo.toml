@@ -8,7 +8,7 @@ keywords = ["webgl"]
 readme = "README.md"
 repository = "https://github.com/paulgb/webgl2-glyph/"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+exclude = ["demos/*"]
 
 [dependencies]
 bytemuck = { version = "1.7.0", features = ["derive"] }
