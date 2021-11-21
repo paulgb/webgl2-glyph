@@ -17,22 +17,19 @@ macro_rules! console_log {
 }
 
 struct Animation {
-    _gl: &'static WebGl2RenderingContext,
-    renderer: TextRenderer<'static>,
+    renderer: TextRenderer,
     frame: u32,
     fps: FpsCounter,
 }
 
 impl Animation {
     pub fn new(gl: WebGl2RenderingContext) -> Self {
-        let gl = Box::leak(Box::new(gl));
         let font =
             FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
 
-        let renderer = TextRenderer::try_new(gl, font).unwrap();
+        let renderer = TextRenderer::try_new(Rc::new(gl), font).unwrap();
 
         Animation {
-            _gl: gl,
             renderer,
             frame: 0,
             fps: FpsCounter::new(10),

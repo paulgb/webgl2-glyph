@@ -4,6 +4,7 @@ use webgl2_glyph::{
     glyph_brush::{FontArc, Section, Text},
     TextRenderer,
 };
+use std::rc::Rc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     console_error_panic_hook::set_once();
@@ -20,16 +21,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .dyn_into::<WebGl2RenderingContext>()
         .unwrap();
 
+    gl.clear_color(0.3, 0.7, 1., 1.);
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+
     let font = FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
 
-    let mut renderer = TextRenderer::try_new(&gl, font).unwrap();
+    let mut renderer = TextRenderer::try_new(Rc::new(gl), font).unwrap();
 
     renderer.glyph_brush().queue(
         Section::default()
             .add_text(
                 Text::new("Hello world")
                     .with_scale(50.)
-                    .with_color([1., 0., 0., 1.]),
+                    .with_color([1., 1., 0., 1.]),
             )
             .with_screen_position((30., 30.)),
     );

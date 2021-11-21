@@ -4,6 +4,7 @@ use webgl2_glyph::{
     glyph_brush::{FontArc, Section, Text},
     TextRenderer,
 };
+use std::rc::Rc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     console_error_panic_hook::set_once();
@@ -22,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let font = FontArc::try_from_slice(include_bytes!("../../SourceSansPro-Regular.ttf")).unwrap();
 
-    let mut renderer = TextRenderer::try_new(&gl, font).unwrap();
+    let mut renderer = TextRenderer::try_new(Rc::new(gl), font).unwrap();
 
     renderer.glyph_brush().queue(
         Section::default()

@@ -8,6 +8,7 @@ use crate::projection::ortho;
 use crate::shader::{compile_shader, link_program};
 use crate::vertex::{QuadData, VertexData};
 use std::error::Error;
+use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
 #[allow(unused)]
@@ -63,15 +64,15 @@ pub mod glyph_brush {
 ///
 /// renderer.render().unwrap();
 /// ```
-pub struct TextRenderer<'a> {
-    gl: &'a WebGl2RenderingContext,
+pub struct TextRenderer {
+    gl: Rc<WebGl2RenderingContext>,
     glyph_brush: GlyphBrush<QuadData>,
     program: WebGlProgram,
     vertex_buffer: WebGlBuffer,
     texture: WebGlTexture,
 }
 
-impl<'a> TextRenderer<'a> {
+impl TextRenderer {
     /// Returns a mutable reference to the renderer's internal `GlyphBrush` instance.
     /// This can be used to add text to the queue.
     pub fn glyph_brush(&mut self) -> &mut GlyphBrush<QuadData> {
@@ -126,7 +127,7 @@ impl<'a> TextRenderer<'a> {
 
     /// Construct a new instance for rendering text in the given font to the given WebGL2 rendering
     /// context.
-    pub fn try_new(gl: &'a WebGl2RenderingContext, font: FontArc) -> Result<Self, Box<dyn Error>> {
+    pub fn try_new(gl: Rc<WebGl2RenderingContext>, font: FontArc) -> Result<Self, Box<dyn Error>> {
         let glyph_brush: GlyphBrush<QuadData> = { GlyphBrushBuilder::using_font(font).build() };
 
         let vertex_buffer = gl
@@ -169,6 +170,10 @@ impl<'a> TextRenderer<'a> {
     pub fn render(&mut self) -> Result<(), Box<dyn Error>> {
         loop {
             let gl = &self.gl;
+
+            gl.enable(WebGl2RenderingContext::BLEND);
+            gl.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+
             let texture = &self.texture;
 
             let update_texture = move |rect: Rectangle<u32>, tex_data: &[u8]| {
