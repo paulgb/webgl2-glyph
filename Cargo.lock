@@ -471,7 +471,7 @@ dependencies = [
 
 [[package]]
 name = "webgl2-glyph"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "bytemuck",
  "getrandom",
