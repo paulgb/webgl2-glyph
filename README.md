@@ -8,3 +8,4 @@ Demos:
 - [Dynamic text](https://paulgb.github.io/webgl2-glyph/dynamic/) ([code](https://github.com/paulgb/webgl2-glyph/blob/main/demos/dynamic/src/main.rs))
 - [Dynamic size](https://paulgb.github.io/webgl2-glyph/dynamic-size/) ([code](https://github.com/paulgb/webgl2-glyph/blob/main/demos/dynamic-size/src/main.rs))
 - [Color](https://paulgb.github.io/webgl2-glyph/colors/) ([code](https://github.com/paulgb/webgl2-glyph/blob/main/demos/colors/src/main.rs))
+- [Lots of text](https://paulgb.github.io/webgl2-glyph/multiple-text/) ([code](https://github.com/paulgb/webgl2-glyph/blob/main/demos/multiple-text/src/main.rs))
