@@ -68,8 +68,77 @@ pub struct TextRenderer {
     gl: Rc<WebGl2RenderingContext>,
     glyph_brush: GlyphBrush<QuadData>,
     program: WebGlProgram,
-    vertex_buffer: WebGlBuffer,
+    vertex_buffer: ReusableBuffer,
     texture: WebGlTexture,
+}
+
+struct ReusableBuffer {
+    buf: WebGlBuffer,
+    gl: Rc<WebGl2RenderingContext>,
+    size: i32,
+}
+
+impl ReusableBuffer {
+    pub fn buffer(&self) -> &WebGlBuffer {
+        &self.buf
+    }
+
+    pub fn new(gl: Rc<WebGl2RenderingContext>) -> Result<Self, WebGl2GlyphError> {
+        let size = 1024;
+
+        let buf = gl
+            .create_buffer()
+            .ok_or_else(|| WebGl2GlyphError::WebGlError("Couldn't create buffer.".to_string()))?;
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buf));
+        gl.buffer_data_with_i32(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            size,
+            WebGl2RenderingContext::DYNAMIC_DRAW,
+        );
+
+        Ok(Self {
+            buf,
+            gl,
+            size
+        })
+    }
+
+    pub fn set_content(&mut self, content: &[u8]) -> Result<(), WebGl2GlyphError> {
+        if content.len() as i32 > self.size {
+            self.gl.delete_buffer(Some(&self.buf));
+
+            self.buf = self.gl
+                .create_buffer()
+                .ok_or_else(|| WebGl2GlyphError::WebGlError("Couldn't create buffer.".to_string()))?;
+
+            console_log!("Resizing buffer from {} to {}", self.size, content.len());
+            self.size = content.len() as _;
+
+            self.gl.bind_buffer(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                Some(&self.buf),
+            );
+
+            self.gl.buffer_data_with_i32(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                self.size,
+                WebGl2RenderingContext::DYNAMIC_DRAW,
+            );
+        } else {
+            self.gl.bind_buffer(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                Some(&self.buf),
+            );
+        }
+
+        self.gl.buffer_sub_data_with_i32_and_u8_array(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            0,
+            content,
+        );
+
+        Ok(())
+    }
 }
 
 impl TextRenderer {
@@ -129,16 +198,7 @@ impl TextRenderer {
     /// context.
     pub fn try_new(gl: Rc<WebGl2RenderingContext>, font: FontArc) -> Result<Self, Box<dyn Error>> {
         let glyph_brush: GlyphBrush<QuadData> = { GlyphBrushBuilder::using_font(font).build() };
-
-        let vertex_buffer = gl
-            .create_buffer()
-            .ok_or_else(|| WebGl2GlyphError::WebGlError("Couldn't create buffer.".to_string()))?;
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
-        gl.buffer_data_with_i32(
-            WebGl2RenderingContext::ARRAY_BUFFER,
-            4096,
-            WebGl2RenderingContext::DYNAMIC_DRAW,
-        );
+        let vertex_buffer = ReusableBuffer::new(gl.clone())?;
 
         let texture = Self::create_texture(&gl, glyph_brush.texture_dimensions())?;
 
@@ -198,16 +258,7 @@ impl TextRenderer {
                 .process_queued(update_texture, vertex::to_quad_data)
             {
                 Ok(BrushAction::Draw(vertices)) => {
-                    self.gl.bind_buffer(
-                        WebGl2RenderingContext::ARRAY_BUFFER,
-                        Some(&self.vertex_buffer),
-                    );
-
-                    self.gl.buffer_sub_data_with_i32_and_u8_array(
-                        WebGl2RenderingContext::ARRAY_BUFFER,
-                        0,
-                        &bytemuck::cast_slice(&vertices),
-                    );
+                    self.vertex_buffer.set_content(&bytemuck::cast_slice(&vertices))?;
 
                     let mut offset = 0;
                     offset = vertex::describe_attribute(
