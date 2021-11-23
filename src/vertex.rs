@@ -1,6 +1,6 @@
 use glyph_brush::ab_glyph::{point, Rect};
 use glyph_brush::GlyphVertex;
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+use web_sys::WebGl2RenderingContext;
 
 #[repr(C)]
 #[derive(bytemuck::Pod, bytemuck::Zeroable, Debug, Clone, Copy)]
@@ -98,13 +98,11 @@ pub fn to_quad_data(vertex: GlyphVertex) -> QuadData {
 #[inline]
 pub fn describe_attribute(
     gl: &WebGl2RenderingContext,
-    program: &WebGlProgram,
-    attribute: &str,
+    location: u32,
     offset: i32,
     size: i32,
     stride: usize,
 ) -> i32 {
-    let location = gl.get_attrib_location(&program, attribute) as u32;
     gl.vertex_attrib_pointer_with_i32(
         location,
         size,

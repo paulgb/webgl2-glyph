@@ -1,6 +1,6 @@
 use ::glyph_brush::ab_glyph::FontArc;
 use ::glyph_brush::{BrushAction, GlyphBrush, GlyphBrushBuilder, Rectangle};
-use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture};
+use web_sys::{WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlTexture, WebGlUniformLocation};
 
 use crate::error::WebGl2GlyphError;
 pub use crate::fps::FpsCounter;
@@ -27,8 +27,8 @@ mod vertex;
 
 /// Re-exported glyph_brush.
 pub mod glyph_brush {
-    pub use ::glyph_brush::*;
     pub use ::glyph_brush::ab_glyph::FontArc;
+    pub use ::glyph_brush::*;
 }
 
 /// Glyph renderer for WebGL2.
@@ -70,6 +70,19 @@ pub struct TextRenderer {
     program: WebGlProgram,
     vertex_buffer: ReusableBuffer,
     texture: WebGlTexture,
+
+    height: f32,
+    width: f32,
+
+    position_location: u32,
+    tex_coord_location: u32,
+    color_location: u32,
+    uniform_location: WebGlUniformLocation,
+
+    vertices: i32,
+
+    pub x_offset: f32,
+    pub y_offset: f32,
 }
 
 struct ReusableBuffer {
@@ -79,10 +92,6 @@ struct ReusableBuffer {
 }
 
 impl ReusableBuffer {
-    pub fn buffer(&self) -> &WebGlBuffer {
-        &self.buf
-    }
-
     pub fn new(gl: Rc<WebGl2RenderingContext>) -> Result<Self, WebGl2GlyphError> {
         let size = 1024;
 
@@ -96,28 +105,28 @@ impl ReusableBuffer {
             WebGl2RenderingContext::DYNAMIC_DRAW,
         );
 
-        Ok(Self {
-            buf,
-            gl,
-            size
-        })
+        Ok(Self { buf, gl, size })
+    }
+
+    pub fn bind(&self) {
+        self.gl
+            .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.buf));
     }
 
     pub fn set_content(&mut self, content: &[u8]) -> Result<(), WebGl2GlyphError> {
+        console_log!("set_content called");
         if content.len() as i32 > self.size {
             self.gl.delete_buffer(Some(&self.buf));
 
-            self.buf = self.gl
-                .create_buffer()
-                .ok_or_else(|| WebGl2GlyphError::WebGlError("Couldn't create buffer.".to_string()))?;
+            self.buf = self.gl.create_buffer().ok_or_else(|| {
+                WebGl2GlyphError::WebGlError("Couldn't create buffer.".to_string())
+            })?;
 
             console_log!("Resizing buffer from {} to {}", self.size, content.len());
             self.size = content.len() as _;
 
-            self.gl.bind_buffer(
-                WebGl2RenderingContext::ARRAY_BUFFER,
-                Some(&self.buf),
-            );
+            self.gl
+                .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.buf));
 
             self.gl.buffer_data_with_i32(
                 WebGl2RenderingContext::ARRAY_BUFFER,
@@ -125,10 +134,8 @@ impl ReusableBuffer {
                 WebGl2RenderingContext::DYNAMIC_DRAW,
             );
         } else {
-            self.gl.bind_buffer(
-                WebGl2RenderingContext::ARRAY_BUFFER,
-                Some(&self.buf),
-            );
+            self.gl
+                .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.buf));
         }
 
         self.gl.buffer_sub_data_with_i32_and_u8_array(
@@ -216,12 +223,38 @@ impl TextRenderer {
             link_program(&gl, &vert_shader, &frag_shader)?
         };
 
+        let canvas = gl
+            .canvas()
+            .unwrap()
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .unwrap();
+        let width = canvas.width();
+        let height = canvas.height();
+
+        let position_location = gl.get_attrib_location(&program, "a_position") as u32;
+        let tex_coord_location = gl.get_attrib_location(&program, "a_tex_coord") as u32;
+        let color_location = gl.get_attrib_location(&program, "a_color") as u32;
+        let uniform_location = gl.get_uniform_location(&program, "u_transform").unwrap();
+
         Ok(TextRenderer {
             gl,
             glyph_brush,
             program,
             vertex_buffer,
             texture,
+
+            position_location,
+            tex_coord_location,
+            color_location,
+            uniform_location,
+
+            height: height as _,
+            width: width as _,
+
+            vertices: 0,
+
+            x_offset: 0.,
+            y_offset: 0.,
         })
     }
 
@@ -232,7 +265,10 @@ impl TextRenderer {
             let gl = &self.gl;
 
             gl.enable(WebGl2RenderingContext::BLEND);
-            gl.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+            gl.blend_func(
+                WebGl2RenderingContext::ONE,
+                WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA,
+            );
 
             let texture = &self.texture;
 
@@ -258,62 +294,16 @@ impl TextRenderer {
                 .process_queued(update_texture, vertex::to_quad_data)
             {
                 Ok(BrushAction::Draw(vertices)) => {
-                    self.vertex_buffer.set_content(&bytemuck::cast_slice(&vertices))?;
+                    self.vertices = vertices.len() as _;
+                    self.vertex_buffer
+                        .set_content(&bytemuck::cast_slice(&vertices))?;
 
-                    let mut offset = 0;
-                    offset = vertex::describe_attribute(
-                        &self.gl,
-                        &self.program,
-                        "a_position",
-                        offset,
-                        3, // vec3(x, y, z)
-                        std::mem::size_of::<VertexData>(),
-                    );
-                    offset = vertex::describe_attribute(
-                        &self.gl,
-                        &self.program,
-                        "a_tex_coord",
-                        offset,
-                        2, // vec2(u, v)
-                        std::mem::size_of::<VertexData>(),
-                    );
-                    vertex::describe_attribute(
-                        &self.gl,
-                        &self.program,
-                        "a_color",
-                        offset,
-                        4, // vec2(r, g, b, a)
-                        std::mem::size_of::<VertexData>(),
-                    );
-
-                    self.gl.use_program(Some(&self.program));
-
-                    {
-                        let canvas = gl
-                            .canvas()
-                            .unwrap()
-                            .dyn_into::<web_sys::HtmlCanvasElement>()
-                            .unwrap();
-                        let width = canvas.width();
-                        let height = canvas.height();
-                        let transform = ortho(0., width as _, 0., height as _, 0., 1.);
-                        let location = gl.get_uniform_location(&self.program, "u_transform");
-
-                        gl.uniform_matrix4fv_with_f32_array(
-                            location.as_ref(),
-                            false,
-                            &bytemuck::cast_slice(&transform),
-                        );
-                    }
-
-                    self.gl.draw_arrays(
-                        WebGl2RenderingContext::TRIANGLES,
-                        0,
-                        (vertices.len() * 6) as _,
-                    );
+                    self.draw();
                     break;
                 }
                 Ok(BrushAction::ReDraw) => {
+                    self.vertex_buffer.bind();
+                    self.draw();
                     break;
                 }
                 Err(glyph_brush::BrushError::TextureTooSmall { suggested }) => {
@@ -323,5 +313,52 @@ impl TextRenderer {
             }
         }
         Ok(())
+    }
+
+    fn draw(&self) {
+        self.gl.use_program(Some(&self.program));
+
+        let mut offset = 0;
+        offset = vertex::describe_attribute(
+            &self.gl,
+            self.position_location,
+            offset,
+            3, // vec3(x, y, z)
+            std::mem::size_of::<VertexData>(),
+        );
+        offset = vertex::describe_attribute(
+            &self.gl,
+            self.tex_coord_location,
+            offset,
+            2, // vec2(u, v)
+            std::mem::size_of::<VertexData>(),
+        );
+        vertex::describe_attribute(
+            &self.gl,
+            self.color_location,
+            offset,
+            4, // vec2(r, g, b, a)
+            std::mem::size_of::<VertexData>(),
+        );
+
+        {
+            let transform = ortho(
+                -self.x_offset,
+                -self.x_offset + self.width,
+                -self.y_offset,
+                -self.y_offset + self.height,
+                0.,
+                1.,
+            );
+
+            self.gl.uniform_matrix4fv_with_f32_array(
+                Some(&self.uniform_location),
+                false,
+                &bytemuck::cast_slice(&transform),
+            );
+        }
+
+        self.gl
+            .draw_arrays(WebGl2RenderingContext::TRIANGLES, 0, self.vertices * 6);
     }
 }
